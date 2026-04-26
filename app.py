@@ -8,30 +8,15 @@ IMAGE_SIZE = 128
 
 @st.cache_resource
 def load_trained_model():
+    return tf.keras.models.load_model("potato_disease_model.keras")
+
+@st.cache_data
+def load_class_names():
     with open("class_names.pkl", "rb") as f:
-        class_names = pickle.load(f)
+        return pickle.load(f)
 
-    model = tf.keras.Sequential([
-        tf.keras.layers.Rescaling(1./255, input_shape=(IMAGE_SIZE, IMAGE_SIZE, 3)),
-
-        tf.keras.layers.Conv2D(16, 3, padding="same", activation="relu"),
-        tf.keras.layers.MaxPooling2D(),
-
-        tf.keras.layers.Conv2D(32, 3, padding="same", activation="relu"),
-        tf.keras.layers.MaxPooling2D(),
-
-        tf.keras.layers.Conv2D(64, 3, padding="same", activation="relu"),
-        tf.keras.layers.MaxPooling2D(),
-
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(128, activation="relu"),
-        tf.keras.layers.Dense(len(class_names), activation="softmax")
-    ])
-
-    model.load_weights("potato_disease_weights.weights.h5")
-    return model, class_names
-
-model, class_names = load_trained_model()
+model = load_trained_model()
+class_names = load_class_names()
 
 st.title("Potato Plant Disease Detection")
 st.write("Upload a potato leaf image to detect the disease.")
