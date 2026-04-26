@@ -7,27 +7,25 @@ from PIL import Image
 IMAGE_SIZE = 128
 
 @st.cache_resource
-def load_tflite_model():
-    interpreter = tf.lite.Interpreter(model_path="potato_disease_model.tflite")
-    interpreter.allocate_tensors()
-    return interpreter
+def load_model():
+    model = tf.keras.models.load_model(
+        "potato_disease_model.keras",
+        compile=False   # 🔥 VERY IMPORTANT FIX
+    )
+    return model
 
 @st.cache_data
-def load_class_names():
+def load_classes():
     with open("class_names.pkl", "rb") as f:
         return pickle.load(f)
 
-interpreter = load_tflite_model()
-class_names = load_class_names()
+model = load_model()
+class_names = load_classes()
 
-input_details = interpreter.get_input_details()
-output_details = interpreter.get_output_details()
-
-st.title("Potato Plant Disease Detection")
-st.write("Upload a potato leaf image to detect the disease.")
+st.title("🌿 Potato Leaf Disease Detection")
 
 uploaded_file = st.file_uploader(
-    "Choose a potato leaf image",
+    "Upload Image",
     type=["jpg", "jpeg", "png"]
 )
 
@@ -36,16 +34,13 @@ if uploaded_file is not None:
     st.image(img, caption="Uploaded Image", use_container_width=True)
 
     img = img.resize((IMAGE_SIZE, IMAGE_SIZE))
-    img_array = np.array(img, dtype=np.float32)
+    img_array = np.array(img) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
-    if st.button("Predict Disease"):
-        interpreter.set_tensor(input_details[0]["index"], img_array)
-        interpreter.invoke()
+    if st.button("Predict"):
+        prediction = model.predict(img_array)
+        index = np.argmax(prediction[0])
+        confidence = np.max(prediction[0]) * 100
 
-        prediction = interpreter.get_tensor(output_details[0]["index"])[0]
-        predicted_index = np.argmax(prediction)
-        confidence = np.max(prediction) * 100
-
-        st.success(f"Prediction: {class_names[predicted_index]}")
+        st.success(f"Prediction: {class_names[index]}")
         st.write(f"Confidence: {confidence:.2f}%")
